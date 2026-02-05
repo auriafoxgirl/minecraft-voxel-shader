@@ -1,0 +1,24 @@
+#version 120
+
+varying vec2 lmcoord;
+varying vec2 texcoord;
+varying vec4 glcolor;
+varying float normalShading;
+varying float lightingStrength;
+
+in vec2 mc_Entity;
+
+void main() {
+	gl_Position = ftransform();
+	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+	glcolor = gl_Color;
+	vec3 normal = gl_NormalMatrix * normalize(gl_Normal);
+	normalShading = dot(normal * normal, vec3(0.6, 0.25 * normal.y + 0.75, 0.8));
+	int blockId = int(mc_Entity.x + 0.5);
+	if (blockId == 5) {
+		lightingStrength = 0.5;
+	} else {
+		lightingStrength = 1.0;
+	}
+}
