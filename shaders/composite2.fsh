@@ -1,8 +1,14 @@
 #version 120
 
+// #define IGNORE_TRANSLUCENT //
+
 uniform sampler2D colortex0; // color
 uniform sampler2D colortex2; // normal
+#ifdef IGNORE_TRANSLUCENT
+uniform sampler2D depthtex1; // depth
+#else
 uniform sampler2D depthtex0; // depth
+#endif
 uniform sampler2D colortex1; // min depth
 
 varying vec2 texcoord;
@@ -44,7 +50,11 @@ vec3 roundVoxelPos(vec3 p) {
 void main() {
 	vec3 color = texture2D(colortex0, texcoord).rgb;
 
+	#ifdef IGNORE_TRANSLUCENT
+	float rawDepth = texture2D(depthtex1, texcoord).r;
+	#else
 	float rawDepth = texture2D(depthtex0, texcoord).r;
+	#endif
 	if (rawDepth < MC_HAND_DEPTH * 0.5 + 0.5) {
 		gl_FragData[0] = vec4(color, 1.0);
 		return;
@@ -91,7 +101,11 @@ void main() {
 			vec3 eyePos = myVoxelPos - cameraPositionFract;
 			vec3 viewPos = mat3(gbufferModelView) * eyePos;
 			vec3 screenPos = viewToScreenPos(viewPos);
+			#ifdef IGNORE_TRANSLUCENT
+			float myDepth = texture2D(depthtex1, screenPos.xy).r;
+			#else
 			float myDepth = texture2D(depthtex0, screenPos.xy).r;
+			#endif
 			if (
 					screenPos.z > myDepth
 					&& viewPos.z < 0.0
