@@ -1,6 +1,7 @@
 #version 120
 
 // #define IGNORE_TRANSLUCENT //
+#define UV_FIX //
 
 uniform sampler2D colortex0; // color
 uniform sampler2D colortex2; // normal
@@ -21,6 +22,9 @@ uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
 
 uniform vec3 cameraPositionFract;
+
+uniform float viewWidth;
+uniform float viewHeight;
 
 #define VOXEL_SCALE 16.0 // [1.0 2.0 4.0 8.0 16.0 32.0 64.0 128.0]
 float VOXEL_SCALE_INV = 1.0 / VOXEL_SCALE;
@@ -111,6 +115,13 @@ void main() {
 					&& viewPos.z < 0.0
 					&& i > 3
 				) {
+				#ifdef UV_FIX
+				vec3 newScreenPos = eyeToScreenPos((vec3(mapPos) + 0.5 - normal * 0.49) * VOXEL_SCALE_INV - cameraPositionFract);
+				float newDepth = texture2D(depthtex0, newScreenPos.xy).r;
+				if ((screenPos.z > newDepth)) {
+					screenPos = newScreenPos;
+				}
+				#endif
 				hit = true;
 				color = texture2D(colortex0, screenPos.xy).rgb;
 				lightStrength = texture2D(colortex2, screenPos.xy).g;
