@@ -117,7 +117,11 @@ void main() {
 				) {
 				#ifdef UV_FIX
 				vec3 newScreenPos = eyeToScreenPos((vec3(mapPos) + 0.5 - normal * 0.49) * VOXEL_SCALE_INV - cameraPositionFract);
-				float newDepth = texture2D(depthtex0, newScreenPos.xy).r;
+					#ifdef IGNORE_TRANSLUCENT
+						float newDepth = texture2D(depthtex1, newScreenPos.xy).r;
+					#else
+						float newDepth = texture2D(depthtex0, newScreenPos.xy).r;
+					#endif
 				if ((screenPos.z > newDepth)) {
 					screenPos = newScreenPos;
 				}
