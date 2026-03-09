@@ -51,20 +51,31 @@ vec3 roundVoxelPos(vec3 p) {
 	return (floor(p * VOXEL_SCALE) + 0.5001) * VOXEL_SCALE_INV;
 }
 
+vec4 clampedTexelFetch(sampler2D tex, vec2 uv) {
+	return texelFetch(
+		tex,
+		ivec2(
+			clamp(uv.x * viewWidth, 0.0, viewWidth - 1.0),
+			clamp(uv.y * viewHeight, 0.0, viewHeight - 1.0)
+		),
+		0
+	);
+}
+
 void main() {
-	vec3 color = texture2D(colortex0, texcoord).rgb;
+	vec3 color = clampedTexelFetch(colortex0, texcoord).rgb;
 
 	#ifdef IGNORE_TRANSLUCENT
-	float rawDepth = texture2D(depthtex1, texcoord).r;
+	float rawDepth = clampedTexelFetch(depthtex1, texcoord).r;
 	#else
-	float rawDepth = texture2D(depthtex0, texcoord).r;
+	float rawDepth = clampedTexelFetch(depthtex0, texcoord).r;
 	#endif
 	if (rawDepth < MC_HAND_DEPTH * 0.5 + 0.5) {
 		gl_FragData[0] = vec4(color, 1.0);
 		return;
 	}
 
-	float depth = texture2D(colortex1, texcoord).r;
+	float depth = clampedTexelFetch(colortex1, texcoord).r;
 	vec3 normal = vec3(0.0, 1.0, 0.0);
 	float lightStrength = 0.0;
 	bool hit = false;
@@ -106,9 +117,9 @@ void main() {
 			vec3 viewPos = mat3(gbufferModelView) * eyePos;
 			vec3 screenPos = viewToScreenPos(viewPos);
 			#ifdef IGNORE_TRANSLUCENT
-			float myDepth = texture2D(depthtex1, screenPos.xy).r;
+			float myDepth = clampedTexelFetch(depthtex1, screenPos.xy).r;
 			#else
-			float myDepth = texture2D(depthtex0, screenPos.xy).r;
+			float myDepth = clampedTexelFetch(depthtex0, screenPos.xy).r;
 			#endif
 			if (
 					screenPos.z > myDepth
@@ -118,17 +129,17 @@ void main() {
 				#ifdef UV_FIX
 				vec3 newScreenPos = eyeToScreenPos((vec3(mapPos) + 0.5 - normal * 0.49) * VOXEL_SCALE_INV - cameraPositionFract);
 					#ifdef IGNORE_TRANSLUCENT
-						float newDepth = texture2D(depthtex1, newScreenPos.xy).r;
+						float newDepth = clampedTexelFetch(depthtex1, newScreenPos.xy).r;
 					#else
-						float newDepth = texture2D(depthtex0, newScreenPos.xy).r;
+						float newDepth = clampedTexelFetch(depthtex0, newScreenPos.xy).r;
 					#endif
 				if ((screenPos.z > newDepth)) {
 					screenPos = newScreenPos;
 				}
 				#endif
 				hit = true;
-				color = texture2D(colortex0, screenPos.xy).rgb;
-				lightStrength = texture2D(colortex2, screenPos.xy).g;
+				color = clampedTexelFetch(colortex0, screenPos.xy).rgb;
+				lightStrength = clampedTexelFetch(colortex2, screenPos.xy).g;
 				break;
 			}
 		}
@@ -139,7 +150,7 @@ void main() {
 
 	float light = dot(normal * normal, vec3(0.6, 0.25 * -normal.y + 0.75, 0.8));
 	color = mix(
-		color * texture2D(colortex1, texcoord).r,
+		color * clampedTexelFetch(colortex1, texcoord).r,
 		color * light,
 		lightStrength
 	);
